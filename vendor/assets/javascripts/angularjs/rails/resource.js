@@ -85,31 +85,6 @@
     });
 
     angular.module('rails').factory('railsResourceFactory', ['$http', '$q', '$injector', '$interpolate', function ($http, $q, $injector, $interpolate) {
-        // urlBuilder("/path/{{someId}}")(someId: 5) == "/path/5"
-        function urlBuilder(url) {
-            var expression;
-
-            if (angular.isFunction(url)) {
-                return url;
-            }
-
-            if (url.indexOf('{{') === -1) {
-                url = url + '/{{id}}';
-            }
-
-            expression = $interpolate(url);
-
-            return function (params) {
-                url = expression(params);
-
-                if (url.charAt(url.length - 1) === '/') {
-                    url = url.substr(0, url.length - 1);
-                }
-
-                return url;
-            };
-        }
-
         function railsResourceFactory(config) {
             var transformers = config.requestTransformers || ['railsRootWrappingTransformer', 'railsFieldRenamingTransformer'],
                 interceptors = config.responseInterceptors || ['railsFieldRenamingInterceptor', 'railsRootWrappingInterceptor'];
@@ -128,8 +103,30 @@
                 angular.extend(this, data);
             }
 
+            // Usage:
+            // .setUrl("/path/{{someId}}")
+            // .url(someId: 5)
             RailsResource.setUrl = function(url) {
-              RailsResource.url = urlBuilder(url);
+              var expression;
+
+              if (angular.isFunction(url)) {
+                return url;
+              }
+
+              if (url.indexOf('{{') === -1) {
+                url = url + '/{{id}}';
+              }
+
+              expression = $interpolate(url);
+              RailsResource.url = function (params) {
+                url = expression(params);
+
+                if (url.charAt(url.length - 1) === '/') {
+                  url = url.substr(0, url.length - 1);
+                }
+
+                return url;
+              };
             };
             RailsResource.setUrl(config.url);
             RailsResource.rootName = config.name;
